@@ -1,0 +1,59 @@
+# Navigation Links
+#   To link a homepage widget, specify the URL as a hash `#` followed by the filename of the
+#     desired widget in your `content/home/` folder.
+#   The weight parameter defines the order that the links will appear in.
+
+[[main]]
+  name = "About"
+  url = "#about"
+  weight = 1
+
+[[main]]
+  name = "Blog"
+  url = "/post/"
+  weight = 2
+  
+[[main]]
+  name = "Documents"
+  url = ""
+  weight = 3
+  identifier = "output"
+
+[[main]]
+  name = "Publications"
+  url = "/publication/"
+  parent = "output"
+
+[[main]]
+  name = "Talks & Posters"
+  url = "/talk/"
+  parent = "output"
+
+# Link to a PDF of your resume/CV from the menu.
+# To enable, copy your resume/CV to `static/files/cv.pdf` and uncomment the lines below.
+[[main]]
+  name = "CV"
+  url = "files/cv.pdf"
+  parent = "output"
+
+[[main]]
+  name = "External links"
+  url = ""
+  weight = 4
+  identifier = "external"
+  
+[[main]]
+  name = "R-bloggers"
+  url = "https://www.r-bloggers.com/"
+  parent = "external"
+  
+[[main]]
+  name = "Julia Bloggers"
+  url = "https://www.juliabloggers.com/"
+  parent = "external"
+  
+[[main]]
+  name = "R Academy"
+  url = "http://racademy.nl/"
+  parent = "external"
+  
