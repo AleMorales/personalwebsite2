@@ -1,0 +1,119 @@
+---
+title: 'Beyond normality: the bootstrap method'
+author: Alejandro Morales
+date: '2019-08-16'
+slug: beyond-normality
+categories:
+  - R
+  - Statistics
+  - Numerical methods
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2019-08-16T17:50:32+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+Setup R 
+```{r}
+for(name in c("ggplot2", "plotly","furrr"))
+  library(name, character.only = TRUE)
+```
+
+The data to be analysed
+
+```{r}
+Biomass = data.frame(Treatment = rep(c("C", "D", "HT", "HTD"), each = 18),
+                 Biomass = c(2.03,	4.49,	3.84,	2.66,	7.4,	3.04,	2.63,	7,	5.84,	6.99,	4.15,	5.74,	10.49,	23.3,	14.21,	16.97,	11.56,	17.94, 6.01,	6.94,	6.05,	5.23,	2.47,	6.24,	3.96,	4.47,	2.35,	4.37,	3.33,	6.04,	7.98,	11.44,	10.02,	9.64,	11.19,	12.71, 5.22,	4.61,	7.58,	4.7,	6.68,	4.88,	4.11,	4.28,	5.77,	1.54,	2.79,	7.64,	8.68,	7.68,	12,	7.06,	9.9,	17.94, 3.8,	3.8,	5.14,	6.06,	2.78,	2.63,	3.91,	4.65,	5.62,	4.5,	4.45,	5.44,	8.53,	5.59,	6.14,	4.92,	6.54,	7.01))
+
+p = ggplot(data = Biomass, aes(x = Treatment, y = Biomass, colour = Treatment)) + geom_point() + geom_jitter(width = 0.25) + geom_violin(fill = NA) + theme(legend.position = "none")
+ggplotly(p)
+```
+
+I chose this dataset because:
+
+1. The data is clearly not normally distributed.
+
+2. The sample is not too small so (i) bootstrap estimates are reliable and (ii) they should not differ too much from the classic t test (which allows to validate the method).
+
+# Assuming normality
+
+We need to calculate:
+
+1. A measure of how compatible the data is with the assumption that the treatment does not decrease biomass and that the samples come from a Normal population. This is the p-value of a one sided testusing Welch two sample t-test methodology. Although this is built into the `t.test` function in R, we will go through the calculation to reinforce the assumptions (and because some of the calculations are reused in the second approach).
+
+2. An estimate of the difference between each treatment and the control and the uncertainty around this estimate in the form of a confidence interval.
+
+## Welch two sample t test
+
+Remember from the previous [post](https://alemorales.info/post/introduction-sampling-distribution/) than in order to calculate a p value we need two things:
+
+1. A summary statistic that can be calculated from a sample of data.
+
+2. The sampling distribution of the statistic assuming the data was sampled from a random population that represents the model specified by the null hypothesis.
+
+The statistic for the Welch two sample t test is:
+
+$$
+t = \frac{\bar{X}_1 - \bar{X}_2}{\sqrt{\frac{s_1^2}{N_1} - \frac{s_2^2}{N_2}}}
+$$
+
+and the sampling distribution is a t distribution with $\nu$ degrees of freedom calculated according to the Welck-Satterthwaite approximation:
+
+$$
+\nu \approx \frac{\left( \frac{s_1^2}{N_1} + \frac{s_2^2}{N_2}  \right)^2}{\frac{s_1^4}{N_1^2 \left( N_1 - 1\right)} + \frac{s_2^4}{N_2^2 \left( N_2 - 1\right)}}
+$$
+
+
+where $\nu$ is rounded to the nearest integer number. The R implementation are straightforward:
+
+```{r}
+tstat = function(x1, x2) {
+  x1bar = mean(x1)
+  x2bar = mean(x2)
+  s1= sd(x1)
+  s2 = sd(x2)
+  n1 = length(x1)
+  n2 = length(x2)
+  (x1bar - x2bar)/sqrt(s1^2/n1 + s2^2/n2)
+} 
+```
+
+```{r}
+t.test(Biomass~Treatment, data = subset(Biomass, Treatment %in% c("C", "D")), alternative = "greater")
+t.test(Biomass~Treatment, data = subset(Biomass, Treatment %in% c("C", "HT")), alternative = "greater")
+t.test(Biomass~Treatment, data = subset(Biomass, Treatment %in% c("C", "HTD")), alternative = "greater")
+```
+
+
+# Not assuming any particular distribution
+
+
+
+## Calculating confidence interval
+
+
+## Calculating the p-value under the null model
+
+Need a model that share a mean (but the rest of moments may differ). We need to apply a correction to ensure the two empirical dsitributions have the same mean, bootstrap from each of them and then calculate the new sampling distribution.
+
+
+# Shouldn't I correct for multiple comparisons or not?
+
+Note that we do not perform the correction for multiple comparison. The reason is that p-values can be interpreted in two different ways:
+
+1. How unlikely I am to observe this sample given some model (see previous post for details). This is the original interpretation by Fisher.
+
+2. The average error rate of rejecting the null hypothesis when it is correct (i.e. average "Type I" error). This is in the interpretation based on the work of Neyman and Pearson.
+
+These two interpretations are actually contradictory, as Fisher's interpretation focuses on how compatible the sample is with the assumed model whereas the Neyman-Pearson's interpretation focuses on the frequency of errors in the long run for an agent that needs to decide between alternative hypothesis. Correcting p-values for multiple comparison is required if one uses Neyman-Pearson approach, but it makes little sense when following Fisher's approach. 
+
+If you like to reject hypothesis based on magic thresholds (like 5%) then you are following Neyman-Pearson's approach and you need to correct for multiple comparisons as they will inflate your error rate (i.e. by pure chance, 1 in every 20 tests would be below 0.05 even if all the null hypothesis were true). But be aware that this type of *dichotomization* of science leads to many problems and it is increasingly discouraged (especially after the American Statical Association made a strong  [statement]((https://amstat.tandfonline.com/doi/full/10.1080/00031305.2016.1154108#.XVbhPegzaHu)) on the matter on 2016).
+
+
