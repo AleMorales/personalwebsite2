@@ -26,7 +26,7 @@ projects: []
 
 In this article I show how to use parametric and non-parametric bootstrapping to test null hypotheses, with special emphasis on situations when the assumption of normality may not hold. To make it more relevant, I will use real data (from my own research) illustrate the application of these methods. If you get lost somewhere in this article, you may want to take a look at my previous [post](https://alemorales.info/post/introduction-sampling-distribution/), where I introduced the basic concepts behind hypothesis testing and sampling distributions. As in the previous post, the analysis will be done in R, so before we get into the details, it is important to properly setup our R session:
 
-```{r, echo = FALSE, message = FALSE}
+```{r, echo = TRUE, message = FALSE}
 for(name in c("ggplot2", "plotly","furrr", "distr6"))
   library(name, character.only = TRUE)
 plan(multiprocess) # Turns on parallel computation
@@ -59,7 +59,7 @@ group_by(Biomass, Treatment) %>% summarise(test = shapiro.test(log(Biomass))$p.v
 
 which means that the log-transformed data is compatible with the assumption of normality. At this point the usual path is to either work with the orignal scale and address the question using t test (hoping that it is robust enough) or to log-transform the data and apply the t test on the log scale. As will be shown below, whther we test on the original scale or the log scale can lead to differences in the p values.
 
-In this article I will show alternative methods to test differences in means. These methods are known as *bootstrapping* methods and they come in many flavours. Here I will focus on the *parametric bootstrap* and *non-parametric bootstrap*. In the final section, the result from these methods will be compared to the t applied to the original and log scale to illustrate the impact that these choices can have on the results.
+In this article I will show alternative methods to test differences in means. These methods are known as *bootstrapping* methods and they come in many flavours. Here I will focus on the *parametric bootstrap* and *non-parametric bootstrap* (when people just bootstrap, without adjective, it generally means the non-parametric version). In the final section, the result from these methods will be compared to the t applied to the original and log scale to illustrate the impact that these choices can have on the results.
 
 # Parametric bootstrap
 
@@ -109,6 +109,8 @@ mu_hat= function(x) mean(log(x))
 sigma_hat = function(x) sd(log(x))
 ```
 
+Note that this code calculates the maximum likelihood estimators for the mean and standard deviation of the Log-Normal distribution. If we had use another distribution we would have to use different formulae. You can find these formulae online (Wikipedia often has good information on many distributions) or you can use an optmization approach for more complex cases (but that is for another post).
+
 The null hypothesis specifies that the mean of the populations from which the data were sampled should be equal. Since we are comparing each treatment to the control, it makes sense to calculate this mean from the control data (an alternative approach is to use the mean of each pair of treatments being compared). Hence, the estimates of the parameters for the population associated to the control are:
 
 ```{r, cache = TRUE}
@@ -137,14 +139,15 @@ popHT = Lognormal$new(mean = mu_x_hat_C, sd = sigma_x_hat_HT)
 popHTD = Lognormal$new(mean = mu_x_hat_C, sd = sigma_x_hat_HTD)
 ```
 
-By sampling from each population we can compute the sampling distribution of the difference of sample means:
+By sampling from each population we can compute the sampling distribution of the difference of sample means (the `future_map_dbl` is equivalent to a for loop in parallel):
 
 ```{r, cache = TRUE}
 N = 5e4
-sample_mean_C = future_map_dbl(1:N, ~ mean(popC$rand(18)))
-sample_mean_D = future_map_dbl(1:N, ~ mean(popD$rand(18)))
-sample_mean_HT = future_map_dbl(1:N, ~ mean(popHT$rand(18)))
-sample_mean_HTD = future_map_dbl(1:N, ~ mean(popHTD$rand(18)))
+sample_size = 18
+sample_mean_C = future_map_dbl(1:N, ~ mean(popC$rand(sample_size)))
+sample_mean_D = future_map_dbl(1:N, ~ mean(popD$rand(sample_size)))
+sample_mean_HT = future_map_dbl(1:N, ~ mean(popHT$rand(sample_size)))
+sample_mean_HTD = future_map_dbl(1:N, ~ mean(popHTD$rand(sample_size)))
 ```
 
 Which are then compared to the differences observed in the experiment:
@@ -188,12 +191,12 @@ Notice that there are now three corrected means for the control as we are doing 
 
 ```{r, cache = TRUE}
 N = 5e4
-boot_sample_mean_C_D = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_C_D, 18,replace = TRUE)))
-boot_sample_mean_C_HT = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_C_HT, 18,replace = TRUE)))
-boot_sample_mean_C_HTD = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_C_HTD, 18,replace = TRUE)))
-boot_sample_mean_D = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_D, 18,replace = TRUE)))
-boot_sample_mean_HT = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_HT, 18,replace = TRUE)))
-boot_sample_mean_HTD = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_HTD, 18,replace = TRUE)))
+boot_sample_mean_C_D = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_C_D, sample_size,replace = TRUE)))
+boot_sample_mean_C_HT = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_C_HT, sample_size,replace = TRUE)))
+boot_sample_mean_C_HTD = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_C_HTD, sample_size,replace = TRUE)))
+boot_sample_mean_D = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_D, sample_size,replace = TRUE)))
+boot_sample_mean_HT = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_HT, sample_size,replace = TRUE)))
+boot_sample_mean_HTD = future_map_dbl(1:N, ~ mean(sample(boot_mean_Biomass_HTD, sample_size,replace = TRUE)))
 ```
 
 And the p values are calculated as in the parametric case but using the new samples from the non-parametric bootstrap:
@@ -238,6 +241,6 @@ Regarding the two bootstrapping methods, the parametric one is usually more flex
 
 Notice than in the high temperature + drought treatment (HTD), the choice of test and whether to transform the data or not resulted in p values on different sides of the magical threshold of 0.05. This is one of the many reasons why it is not a great idea to dichotomize your thinking according to whether the p value happens to fall below a threshold or not. The problem is that small technical details (that are just assumptions, so they cannot be proven to be right or wrong and are often a matter of personal preference) will push the p value across the threshold. Therefore, if you base your scientific conclusion about an effect on whether p < 0.05 or not, your scientific reasoning is as robust or objective as you may think.  Also, *p hacking* your way into significance becomes very tempting, specially when getting *significant* results has an impact on your career. So, perhaps, you should stop interpreting your results in terms of whether p < 0.05 or not and also stop using the term *statistical significance*. That is actually the opinion of the American Statistical Association (see statements from [2016](https://amstat.tandfonline.com/doi/full/10.1080/00031305.2016.1154108#.XVbhPegzaHu) and [2019](https://tandfonline.com/doi/full/10.1080/00031305.2019.1583913)).
 
-Then, what should we use as alternative? It is not at all clear but most suggestions point at the need to have a more *quantitative* and *continuous* view of statistical inference. One option is to supplement the reported p values with estimates of the effect of the treatment (i.e. by how much was biomass decreased by each treatment) and, very importantly, the uncertainty in these estimates. As with p values, confidence intervals can also be calculated using classical mathematical formulae, parametric and non-parametric bootstrapping methods. I will show how to do this in the next post, stay tuned!
+Then, what should we use as alternative? It is not at all clear but most suggestions point at the need to have a more *quantitative* and *continuous* view of statistical inference. One option is to supplement the reported p values with estimates of the effect of the treatment (i.e. by how much was biomass decreased by each treatment) and, very importantly, the uncertainty in these estimates. As with p values, confidence intervals can also be calculated using classical mathematical formulae, parametric and non-parametric bootstrapping methods. I will show how to do this in a future post, stay tuned!
 
 
