@@ -31,7 +31,7 @@ role: Scientific programmer and data analyst. Plant scientist.
 social:
 - icon: envelope
   icon_pack: fas
-  link: 'mailto:morales.s.alejandro@gmail.coml'
+  link: 'mailto:morales.s.alejandro@gmail.com'
 - icon: twitter
   icon_pack: fab
   link: https://twitter.com/AMS_Model
