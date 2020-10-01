@@ -40,7 +40,7 @@ social:
   link: https://scholar.google.nl/citations?user=ZCxZpKcAAAAJ&hl=en
 - icon: github
   icon_pack: fab
-  link: https:/github.com/AleMorales
+  link: https://github.com/AleMorales
 superuser: true
 ---
 
