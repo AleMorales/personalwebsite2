@@ -20,14 +20,14 @@ interests:
 - Data Science
 - Statistics
 - Computer Science
-- Plant Sciences
+- Crop Sciences
 - R
 - Julia
 name: Alejandro Morales
 organizations:
 - name: 
   url: ""
-role: Scientific programmer and data analyst. Plant scientist.
+role: Docent Quantitative Crop Ecology.
 social:
 - icon: envelope
   icon_pack: fas
@@ -44,4 +44,4 @@ social:
 superuser: true
 ---
 
-I am a postdoctoral researcher at the universities of Wageningen and Utrecht. My skills include model-based statistical inference (both frequentist and Bayesian), scientific programming and process-based modelling as applied in Plant Sciences. My modelling work has focuses on crop modelling and the systems biology of photosynthesis. I am an experienced R and Julia programmer, with some knowledge of C++, with which I have built several [libraries](https://github.com/alemorales).
+I am a Docent at the [Centre for Crop Systems Analysis](https://www.wur.nl/en/Research-Results/Chair-groups/Plant-Sciences/Centre-for-Crop-Systems-Analysis.htm) at [Wageningen University & Research](https://www.wur.nl/en.htm), specialized on Quantitative Crop Ecology, that is, the application of mathematical, statistical and computational models to understand the relationship between crops and their biotic and abiotic environment. My focus is on teaching and the development of software and quantitative methodologies for research. I am an experienced R and Julia programmer, with some knowledge of C++, with which I have built several [libraries](https://github.com/AleMorales).
